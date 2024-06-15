@@ -1,0 +1,5 @@
+".*"
+None,      Up,   Button4, 1
+None,      Down, Button5, 1
+Alt_L,     Up,   Button4, 10
+Alt_L,     Down, Button5, 10

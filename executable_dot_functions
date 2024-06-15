@@ -40,29 +40,54 @@ _ensure_eza_installed() {
         fi
     fi
 }
-_ensure_ueberzugpp_installed() {
-    if ! command -v ueberzugpp &> /dev/null; then
-        echo "'ueberzugpp' is not installed."
-        # Check if yay is available for AUR installations
-        if command -v yay &> /dev/null; then
-            echo "'yay' is available. Attempting to install 'ueberzugpp' from the AUR..."
-            if yay -S --noconfirm ueberzugpp; then
-                echo "'ueberzugpp' installed successfully."
-            else
-                echo "Failed to install 'ueberzugpp'. Please check your AUR helper and internet connection."
-            fi
+
+_update_moar() {
+    if command -v moar &> /dev/null; then
+        echo "'moar' is installed. Checking for updates..."
+
+        # Get the current installed version
+        current_version=$(moar --version | awk '{print $2}')
+
+        # Get the latest version from GitHub releases
+        latest_version=$(curl -s https://api.github.com/repos/walles/moar/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
+
+        if [[ "$current_version" == "$latest_version" ]]; then
+            echo "'moar' is already up-to-date (version $current_version)."
+            return 0
         else
-            echo "Distro Detected does not presently support full quality image previewer."
-            if command -v figlet &> /dev/null; then
-                figlet "Skipping ueberzugpp"
+            echo "New version available: $latest_version (current version: $current_version). Updating 'moar'..."
+
+            # Define the platform
+            platform="linux-amd64"
+
+            # Download the latest binary
+            url="https://github.com/walles/moar/releases/download/${latest_version}/moar-${latest_version}-${platform}"
+            echo "Downloading the latest 'moar' from ${url}..."
+            wget -O /tmp/moar "${url}"
+
+            if [[ $? -ne 0 ]]; then
+                echo "Download failed. Please check your internet connection and the URL."
+                return 1
+            fi
+
+            # Make it executable
+            chmod a+x /tmp/moar
+
+            # Move it to /usr/local/bin
+            sudo mv /tmp/moar /usr/local/bin/moar
+
+            if [[ $? -eq 0 ]]; then
+                echo "'moar' has been updated successfully to version ${latest_version}."
             else
-                echo "Skipping ueberzugpp installation."
+                echo "Failed to move 'moar' to /usr/local/bin. Please check your permissions."
+                return 1
             fi
         fi
     else
-        echo "'ueberzugpp' is already installed."
+        echo "'moar' is not installed. Please install it first using the _install_moar function."
     fi
 }
+
 
 _install_tmux_with_sixel() {
 
@@ -117,6 +142,7 @@ _install_tmux_with_sixel() {
     echo "tmux successfully installed with sixel support $target_bin_dir."
     command -v figlet &> /dev/null && figlet "tmux Installed" || echo "tmux Installed"
 }
+
 _install_tpm() {
     local TMUX_PLUGIN_DIR="$HOME/.tmux/plugins/tpm"
 
@@ -198,6 +224,7 @@ _install_nnn_with_emojis() {
     echo "nnn with Unicode Emoji support and plugins installed successfully in $target_bin_dir."
     figlet "NNN Installed"
 }
+
 function _listcommands() {
     # Use Zsh's print with ANSI colors for consistency
     local RED="%F{red}"
@@ -221,6 +248,7 @@ for func in "${func_names[@]}"; do
 done
 
 }
+
 edit-file(){
 
     if [ -w "$1" ]; then
@@ -279,6 +307,7 @@ nn(){
         rm -f -- "$NNN_TMPFILE" > /dev/null
     }
 }
+
 n(){
 # Block nesting of nnn in subshells
     [ "${NNNLVL:-0}" -eq 0 ] || {
@@ -301,6 +330,7 @@ n(){
         rm -f -- "$NNN_TMPFILE" > /dev/null
     }
 }
+
 # Tmux pane management setup
 panes_cleanup() {
     if [ -n "$TMUX" ]; then
@@ -310,7 +340,7 @@ panes_cleanup() {
     fi
 }
 # Searches for text in all files in the current folder
-function findtext() {
+function find.text() {
 	# If The Silver Searcher is installed, use that
 	# Link: https://github.com/ggreer/the_silver_searcher
 	# Hint: You can use --ignore "dir/or/file"
@@ -360,41 +390,138 @@ function extract() {
 	done
 }
 
-#the almost universal_installer function
-procure() {
-    local program_name=$1
 
-    # Ask for user confirmation before proceeding
-    echo -n "Do you want to install $program_name? [Y/n] "
-    read -r response
-    if [[ "$response" =~ ^([nN][oO]|[nN])$ ]]; then
-        echo "Installation aborted by user."
-        return 1
-    fi
 
-    echo "Attempting to install $program_name..."
+# Function to install programs
+_install_programs() {
+    local programs=("$@")
 
-    # Debian/Ubuntu (apt)
-    if command -v apt &> /dev/null; then
-        echo "Detected apt package manager."
-        sudo apt update && sudo apt install -y "$program_name"
-
-    # Arch Linux (pacman) and fallback to AUR (yay) if pacman fails
-    elif command -v pacman &> /dev/null; then
-        echo "Trying with pacman first..."
-        if ! sudo pacman -Sy --noconfirm "$program_name"; then
-            echo "$program_name not found in official repositories. Trying AUR with yay..."
-            if command -v yay &> /dev/null; then
-                yay -S --noconfirm "$program_name"
-            else
-                echo "yay is not installed. Please install yay for AUR access or install $program_name manually."
-                return 1
-            fi
+    # Filter out already installed programs
+    local filtered_programs=()
+    for program_name in "${programs[@]}"; do
+        if ! command -v $program_name &> /dev/null; then
+            filtered_programs+=("$program_name")
+        else
+            echo "'$program_name' is already installed."
         fi
-    else
-        echo "No compatible package manager found. Please install $program_name manually."
-        return 1
+    done
+
+    # If all programs are already installed, exit the function
+    if [ ${#filtered_programs[@]} -eq 0 ]; then
+        echo "All programs are already installed."
+        return
     fi
+
+    # Convert array to space-separated string
+    local program_list="${filtered_programs[@]}"
+
+    # Try installing with apt
+    if command -v apt &> /dev/null; then
+        echo "Attempting to install ${program_list} using apt..."
+        if sudo apt install -y ${filtered_programs[@]}; then
+            echo "${program_list} installed successfully using apt."
+            return
+        else
+            echo "Failed to install ${program_list} using apt."
+        fi
+    fi
+
+    # Try installing with pacman
+    if command -v pacman &> /dev/null; then
+        echo "Attempting to install ${program_list} using pacman..."
+        if sudo pacman -Sy --noconfirm ${filtered_programs[@]}; then
+            echo "${program_list} installed successfully using pacman."
+            return
+        else
+            echo "Failed to install ${program_list} using pacman."
+        fi
+    fi
+
+    # Try installing with yay
+    if command -v yay &> /dev/null; then
+        echo "Attempting to install ${program_list} using yay..."
+        if yay -S --noconfirm ${filtered_programs[@]}; then
+            echo "${program_list} installed successfully using yay."
+            return
+        else
+            echo "Failed to install ${program_list} using yay."
+        fi
+    fi
+
+    echo "Could not install ${program_list} with any available package manager."
+}
+
+# Function to parse input and call install_programs for the entire list
+procure() {
+    local programs=("$@")
+    _install_programs "${programs[@]}"
+}
+
+
+# Function to uninstall programs
+uninstall_programs() {
+    local programs=("$@")
+
+    # Filter out programs that are not installed
+    local filtered_programs=()
+    for program_name in "${programs[@]}"; do
+        if command -v $program_name &> /dev/null; then
+            filtered_programs+=("$program_name")
+        else
+            echo "'$program_name' is not installed."
+        fi
+    done
+
+    # If no programs are installed, exit the function
+    if [ ${#filtered_programs[@]} -eq 0 ]; then
+        echo "None of the specified programs are installed."
+        return
+    fi
+
+    # Convert array to space-separated string
+    local program_list="${filtered_programs[@]}"
+
+    # Try uninstalling with apt
+    if command -v apt &> /dev/null; then
+        echo "Attempting to remove ${program_list} using apt..."
+        if sudo apt remove -y ${filtered_programs[@]}; then
+            echo "${program_list} removed successfully using apt."
+            sudo apt autoremove -y
+            return
+        else
+            echo "Failed to remove ${program_list} using apt."
+        fi
+    fi
+
+    # Try uninstalling with pacman
+    if command -v pacman &> /dev/null; then
+        echo "Attempting to remove ${program_list} using pacman..."
+        if sudo pacman -Rns --noconfirm ${filtered_programs[@]}; then
+            echo "${program_list} removed successfully using pacman."
+            return
+        else
+            echo "Failed to remove ${program_list} using pacman."
+        fi
+    fi
+
+    # Try uninstalling with yay
+    if command -v yay &> /dev/null; then
+        echo "Attempting to remove ${program_list} using yay..."
+        if yay -Rns --noconfirm ${filtered_programs[@]}; then
+            echo "${program_list} removed successfully using yay."
+            return
+        else
+            echo "Failed to remove ${program_list} using yay."
+        fi
+    fi
+
+    echo "Could not remove ${program_list} with any available package manager."
+}
+
+# Function to parse input and call uninstall_programs for the entire list
+purge() {
+    local programs=("$@")
+    uninstall_programs "${programs[@]}"
 }
 
 ensure_run() { ! command -v $1 &> /dev/null && procure $1; command -v $1 &> /dev/null && $1; }

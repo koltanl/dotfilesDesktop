@@ -8,8 +8,8 @@ alias editrc='edit ~/.zshrc'
 alias refresh='source ~/.zshrc; if [ -n "$TMUX" ]; then tmux source-file ~/.tmux.conf; fi'
 
 #logs
-alias errorsboot='journalctl -b -p err | $PAGER'
-alias errorsdriver='dmesg | grep -i error | $PAGER'
+alias errors.boot='journalctl -b -p err | $PAGER'
+alias errors.driver='dmesg | grep -i error | $PAGER'
 
 # distribution specific commands
 case $DISTRO_FLAG in
@@ -26,12 +26,14 @@ case $DISTRO_FLAG in
         ;;
 esac
 
-alias logsbluetooth='journalctl -b | grep bluetooth | $PAGER'
-alias logswifi='journalctl -b | grep wpa_supplicant | $PAGER'
-alias logsnetworkmanager='journalctl -u NetworkManager | $PAGER'
-alias logsusb='journalctl -b | grep usb | $PAGER'
-alias logsboot='journalctl -b | $PAGER'
+alias logs.bluetooth='journalctl -b | grep bluetooth | $PAGER'
+alias logs.wifi='journalctl -b | grep wpa_supplicant | $PAGER'
+alias logs.networkmanager='journalctl -u NetworkManager | $PAGER'
+alias logs.usb='journalctl -b | grep usb | $PAGER'
+alias logs.boot='journalctl -b | $PAGER'
 alias reboot='sudo reboot'
+alias remove='purge'
+alias uninstall='purge'
 
 if command -v eza >/dev/null 2>&1; then
 	alias ls='eza --icons --sort=modified --oneline --hyperlink'

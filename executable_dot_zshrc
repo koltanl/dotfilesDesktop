@@ -19,8 +19,8 @@ else
     echo "/etc/os-release not found. Unable to determine distribution."
 fi
 
-#export EDITOR=nano
-_TMUX_LOAD=true
+export EDITOR=nano
+_TMUX_LOAD=false
 
 if [ -f ~/.functions ]; then
     source ~/.functions
@@ -38,7 +38,9 @@ export ZPLUG_HOME="$HOME/.zplug"
 first_run_marker="${ZPLUG_HOME}/.installed"
 # Check for 'moar' first; if not found, check for 'less'; if neither, default to 'more'
 if command -v moar &> /dev/null; then
-    alias moar="moar -colors auto -no-statusbar -no-linenumbers -mousemode auto"
+    alias moar="moar -colors auto -wrap -mousemode auto"
+    alias more='moar'
+    alias less='moar'
     export PAGER=moar
 elif command -v less &> /dev/null; then
     export PAGER=less
@@ -187,8 +189,8 @@ fi
 export HISTSIZE=10000  # Optional, for in-session buffer
 export SAVEHIST=10000  # Optional, for in-session buffer
 
-if [ -f ~/scripts/nnn_opener.sh ]; then
-export NNN_OPENER=~/scripts/nnn_opener.sh
+if [ -f ~/scripts/utils/nnn_opener.sh ]; then
+export NNN_OPENER=~/scripts/utils/nnn_opener.sh
 fi
 #/home/anon/.config/nnn/plugins/nuke
 export NNN_PAGER="$PAGER"
