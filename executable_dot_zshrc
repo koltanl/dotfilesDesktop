@@ -1,0 +1,387 @@
+#############################################
+#GLOBALS
+#############################################
+if [[ -f "/etc/os-release" ]]; then
+    source "/etc/os-release"
+    case $ID in
+        ubuntu|debian)
+            DISTRO_FLAG="debian_based"
+            ;;
+        arch|manjaro)
+            DISTRO_FLAG="arch_based"
+            ;;
+        *)
+            echo "Distribution not recognized. Custom aliases not set."
+            ;;
+    esac
+    export DISTRO_FLAG
+else
+    echo "/etc/os-release not found. Unable to determine distribution."
+fi
+
+#export EDITOR=nano
+_TMUX_LOAD=true
+
+if [ -f ~/.functions ]; then
+    source ~/.functions
+fi
+if [ -f ~/.aliases ]; then
+    source ~/.aliases
+fi
+if [ -f ~/.profile ]; then
+    source ~/.profile
+fi
+
+_KERNEL_NAME="$(expr substr $(uname -s) 1 5)"
+export PATH="$HOME/bin:$HOME/.local/bin:/sbin:/usr/sbin:/usr/local/sbin:$PATH"
+export ZPLUG_HOME="$HOME/.zplug"
+first_run_marker="${ZPLUG_HOME}/.installed"
+# Check for 'moar' first; if not found, check for 'less'; if neither, default to 'more'
+if command -v moar &> /dev/null; then
+    alias moar="moar -colors auto -no-statusbar -no-linenumbers -mousemode auto"
+    export PAGER=moar
+elif command -v less &> /dev/null; then
+    export PAGER=less
+elif command -v more &> /dev/null; then
+    export PAGER=more
+fi
+
+if [ "$_TMUX_LOAD" = true ] && command -v tmux >/dev/null 2>&1; then
+    # Check if we are in a tmux session already
+    if [ -z "$TMUX" ]; then
+        # Start a new tmux session or attach to an existing one named "default"
+        tmux attach-session -t default || tmux new-session -s default
+    fi
+else
+   : #echo "tmux is not installed. Please install tmux to use this feature."
+fi
+
+#############################################
+#Dependancies
+#############################################
+
+ensure_exists figlet
+ensure_exists git
+ensure_exists curl
+ensure_exists cmake
+ensure_exists make
+
+# Distro specific checks
+if [[ "$DISTRO_FLAG" == "arch_based" ]]; then
+    ensure_exists yay
+    ensure_exists wezterm
+    # Check if 'ag' command exists.
+    if ! command -v ag &> /dev/null; then
+        ensure_exists the_silver_searcher
+    fi
+    # Arch-specific commands
+elif [[ "$DISTRO_FLAG" == "debian_based" ]]; then
+    ensure_exists debconf
+    # Check if 'ag' command exists
+    if ! command -v ag &> /dev/null; then
+        ensure_exists silversearcher-ag
+    fi
+
+    # Check if the current display server is Wayland
+   if env | grep -q '^WAYLAND_DISPLAY='; then
+       ensure_exists wezterm
+       sudo update-alternatives --config x-terminal-emulator
+   fi
+    # Debian/Ubuntu-specific commands
+fi
+# Check if tmux is installed
+if ! command -v tmux &> /dev/null; then
+    _install_tmux_with_sixel
+fi
+# Independently check if TPM is installed by checking the directory
+if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
+    echo "TPM is not installed."
+    _install_tpm
+fi
+# Check if nnn is installed
+if ! command -v nnn &> /dev/null; then
+    _install_nnn_with_emojis
+fi
+
+# Check if zplug is installed
+if [[ ! -d "${HOME}/.zplug" ]]; then
+    echo "zplug not found. Installing zplug..."
+    git clone https://github.com/zplug/zplug "${ZPLUG_HOME}"
+    #curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+fi
+# Check if Atuin is installed, if not, run its install script
+if ! command -v atuin &> /dev/null; then
+    echo -n "Atuin is not installed. Do you want to install it now? [Y/n] "
+    read -r response
+    if [[ ! "$response" =~ ^[nN](o)* ]]; then
+        echo "Installing Atuin..."
+        /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)"
+        atuin import bash
+    else
+        echo "Skipping Atuin installation."
+    fi
+fi
+if ! command -v zoxide &> /dev/null; then
+    echo -n "Zoxide is not installed. Do you want to install it now? [Y/n] "
+    read -r response
+    if [[ ! "$response" =~ ^[nN](o)* ]]; then
+        echo "Installing Zoxide..."
+        curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
+    else
+        echo "Skipping Zoxide installation."
+    fi
+fi
+if ! command -v img2sixel &> /dev/null; then
+    ensure_exists libsixel
+fi
+if ! command -v sensors &> /dev/null; then
+    ensure_exists lm-sensors
+fi
+ensure_exists tree
+ensure_exists bat
+ensure_exists fzf
+ensure_exists ffmpegthumbnailer
+ensure_exists xclip
+ensure_exists thefuck
+_ensure_eza_installed
+_ensure_moar_installed
+
+#############################################
+# Plugins
+#############################################
+
+# Theme
+#zplug "denysdovhan/spaceship-prompt", use:spaceship.zsh-theme, from:github, as:theme
+if [[ -d "${ZPLUG_HOME}" && -f "${first_run_marker}" ]]; then
+
+        source $ZPLUG_HOME/init.zsh
+
+        zplug "zsh-users/zsh-autosuggestions"
+        zplug "zsh-users/zsh-syntax-highlighting", defer:2
+        zplug "zsh-users/zsh-completions", defer:3
+        zplug "junegunn/fzf", from:github, as:plugin, use:"shell/*.zsh", defer:2
+
+        # Install plugins if they're not already
+        if ! zplug check --verbose; then
+            printf "Install Zplug plugins? [Y/n]: "
+            read -r response
+            response=$(echo "$response" | tr '[:upper:]' '[:lower:]')  # Convert to lowercase using tr
+            if [[ ! "$response" =~ ^(n|no)$ ]]; then
+                echo "Installing Zplug plugins..."
+                zplug install
+            else
+                echo "Skipping plugin installation."
+            fi
+        fi
+
+        # Then load them
+        zplug load #--verbose
+    else
+    echo "Initial zplug setup incomplete. Please complete the setup and restart your shell."
+fi
+
+#############################################
+#EXPORTS
+#############################################
+
+export HISTSIZE=10000  # Optional, for in-session buffer
+export SAVEHIST=10000  # Optional, for in-session buffer
+
+if [ -f ~/scripts/nnn_opener.sh ]; then
+export NNN_OPENER=~/scripts/nnn_opener.sh
+fi
+#/home/anon/.config/nnn/plugins/nuke
+export NNN_PAGER="$PAGER"
+export NNN_PLUG="p:preview-tui;f:fzcd"
+export NNN_FCOLORS='c1e2B32e006033f7c6d6abc4'
+export NNN_BATTHEME='Nord'
+export NNN_BATSTYLE='plain'
+export NNN_TERMINAL=kitty
+#export NNN_ICONLOOKUP=1
+
+# Define LS_COLORS if not already set
+if [ -z "$LS_COLORS" ]; then
+    # Example LS_COLORS definitions
+    LS_COLORS='di=1;34:ln=1;36:so=1;35:pi=1;33:ex=1;32:bd=1;34;46:cd=1;34;46:su=0;41:sg=0;46:tw=0;42:ow=0;43:'
+    export LS_COLORS
+fi
+
+# Colors
+user_color="%F{green}"
+location_color="%F{cyan}" 
+hostname_color="%F{yellow}" 
+# Construct the prompt with dynamic hostname coloring
+PROMPT="${user_color}%n%f@${hostname_color}%m ${location_color}%~%f -> "
+
+# Color for manpages in less makes manpages a little easier to read
+export LESS_TERMCAP_mb=$'\E[01;31m'
+export LESS_TERMCAP_md=$'\E[01;31m'
+export LESS_TERMCAP_me=$'\E[0m'
+export LESS_TERMCAP_se=$'\E[0m'
+export LESS_TERMCAP_so=$'\E[01;44;33m'
+export LESS_TERMCAP_ue=$'\E[0m'
+export LESS_TERMCAP_us=$'\E[01;32m'
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion.
+# Case-sensitive completion must be off. _ and - will be interchangeable.
+# HYPHEN_INSENSITIVE="true"
+
+# Uncomment one of the following lines to change the auto-update behavior
+# zstyle ':omz:update' mode disabled  # disable automatic updates
+# zstyle ':omz:update' mode auto      # update automatically without asking
+# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
+
+# Uncomment the following line to change how often to auto-update (in days).
+# zstyle ':omz:update' frequency 13
+
+# Uncomment the following line if pasting URLs and other text is messed up.
+# DISABLE_MAGIC_FUNCTIONS="true"
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# You can also set it to another string to have that shown instead of the default red dots.
+# e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
+# Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
+COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+#########################################
+#AUTOCOMPLETE MAGIC
+#########################################
+
+autoload -Uz compinit
+compinit
+
+zstyle ':completion::complete:*' use-cache on
+zstyle ':completion::complete:*' cache-path ~/.cache/zsh/$HOST
+
+# Ignored patterns
+zstyle ':completion:*:functions' ignored-patterns '_*'
+zstyle ':completion:*:*:users' ignored-patterns \
+  adm apache bin daemon games gdm halt ident junkbust lp mail mailnull \
+  named news nfsnobody nobody nscd ntp operator pcap postgres radvd \
+  rpc rpcuser rpm shutdown squid sshd sync uucp vcsa xfs avahi-autoipd\
+  avahi backup messagebus beagleindex debian-tor dhcp dnsmasq fetchmail\
+  firebird gnats haldaemon hplip irc klog list man cupsys postfix\
+  proxy syslog www-data mldonkey sys snort
+zstyle ':completion:*:*:(vim|nvim|nano|emacs|vi):*' ignored-patterns '*/'
+
+# Ordering and matching
+zstyle ':completion:*' completer _expand _complete _ignored _approximate
+zstyle ':completion:*' group-order dirs files
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+
+# Remove duplicates
+zstyle ':completion:*' ignored-patterns '*[[:blank:]][[:blank:]]*'
+zstyle ':completion:*' list-suffixes true
+zstyle ':completion:*' expand prefix suffix
+zstyle ':completion:*' squeeze-slashes true
+zstyle ':completion:*' unique true
+
+# Approximate matching
+zstyle ':completion:*:approximate:*' max-errors 'reply=(reply=( $(( ($#PREFIX+$#SUFFIX)/2 )) numeric ))'
+
+# Formatting
+zstyle ':completion:*' list-prompt '%SAt %p: Hit TAB for more, or the character to insert%s'
+zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
+zstyle ':completion:*:descriptions' format '%F{cyan}%B%d%b%f'
+zstyle ':completion:*:messages' format '%F{yellow}%d%f'
+zstyle ':completion:*:warnings' format '%F{red}No matches for: %d%f'
+zstyle ':completion:*:corrections' format '%B%d (errors: %e)%b'
+
+# Grouping Files and Directories
+zstyle ':completion:*:matches' group 'yes'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*:files' menu yes select
+zstyle ':completion:*' file-sort 'case-insensitive'
+
+if [[ -z "$NOMENU" ]] ; then
+zstyle ':completion:*' menu select=2
+else
+  setopt no_auto_menu # don't use any menus at all
+fi
+
+# display the part of the suggestion that comes after the prefix you have already typed
+zstyle ':completion:*' prefix-hidden true
+
+# Colors
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+
+# Hostname completion
+zstyle ':completion:*' hosts $(awk '/^\[^#\]/ {print $2 $3" "$4" "$5}' /etc/hosts | grep -v ip6- && grep "^#%" /etc/hosts | awk -F% '{print $2}')
+
+# Offer indexes before parameters in subscripts
+zstyle ':completion:*:*:-subscript-:*' tag-order indexes parameters
+
+# Process completion for all user processes
+zstyle ':completion:*:processes' command 'ps -au$USER'
+
+# Add colors to processes for kill completion
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+
+# SSH/SCP completion
+zstyle ':completion:*:scp:*' tag-order \
+  files users 'hosts:-host hosts:-domain:domain hosts:-ipaddr"IP\ Address *'
+zstyle ':completion:*:scp:*' group-order \
+  files all-files users hosts-domain hosts-host hosts-ipaddr
+zstyle ':completion:*:ssh:*' tag-order \
+  users 'hosts:-host hosts:-domain:domain hosts:-ipaddr"IP\ Address *'
+zstyle ':completion:*:ssh:*' group-order \
+  hosts-domain hosts-host users hosts-ipaddr
+zstyle '*' single-ignored show
+
+#############################################
+#Individual program initialization
+#############################################
+if [[ -x "$(command -v fuck)" ]]; then
+ eval $(thefuck --alias)
+fi
+# Initialize Atuin if available
+[[ -x "$(command -v atuin)" ]] && eval "$(atuin init zsh)"
+
+# Initialize zoxide if available
+if [[ -x "$(command -v zoxide)" ]]; then
+    eval "$(zoxide init zsh)"
+    alias cd='z'
+fi
+if [ -f ~/.inputrc ]; then
+    source ~/.inputrc
+fi
+#############################################
+#RAN EVERY REFRESH
+#############################################
+
+ensure_run neofetch
+
+#############################################
+#first run completion notification
+#############################################
+if [[ ! -f "${first_run_marker}" ]]; then
+    touch "${first_run_marker}"
+    figlet "Setup Complete"
+    if [[ "$DISTRO_FLAG" == "arch_based" ]]; then
+        echo "Please restart your shell for all changes to take effect. Use the 'refresh' command; Be sure to press Prefix (default: Ctrl + b) + I to install remaining plugins (Case sensitive)."
+        echo "Please configure the default terminal emulator to use WezTerm through your desktop environment."
+
+        # Arch-specific commands
+        elif [[ "$DISTRO_FLAG" == "debian_based" ]]; then
+            echo "Please restart your shell for all changes to take effect. Use the 'refresh' command; Be sure to press Prefix (default: Ctrl + b) + I to install remaining plugins (Case sensitive)."
+
+        # Debian/Ubuntu-specific commands
+        fi
+fi

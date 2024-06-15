@@ -1,0 +1,420 @@
+#!/usr/bin/env zsh
+
+_ensure_moar_installed() {
+    if ! command -v moar &> /dev/null; then
+        echo "'moar' is not installed."
+        # Check if yay is available for AUR installations
+        if command -v yay &> /dev/null; then
+            echo "'yay' is available. Attempting to install 'moar' from the AUR..."
+            yay -S --noconfirm moar
+        else
+        echo "======================================================"
+        figlet "IMPORTANT" 
+        echo "======================================================"
+            echo "The AUR helper 'yay' is not installed. Please install 'moar' manually."
+            echo "Visit https://github.com/walles/moar for installation instructions."
+        echo "======================================================"
+        figlet "IMPORTANT" 
+        echo "======================================================"
+
+        fi
+    fi
+}
+
+_ensure_eza_installed() {
+    if ! command -v eza &> /dev/null; then
+        echo "'eza' is not installed."
+        # Check if pacman is available
+        if command -v pacman &> /dev/null; then
+            echo "'pacman' is available. Attempting to install 'eza"
+            sudo pacman -Sy --noconfirm eza
+        else
+        echo "======================================================"
+        figlet "IMPORTANT" 
+        echo "======================================================"
+            echo "The pacman package manager is not installed. Please install 'eza' manually."
+            echo "Visit https://github.com/eza-community/eza/blob/main/INSTALL.md for installation instructions."
+        echo "======================================================"
+        figlet "IMPORTANT" 
+        echo "======================================================"
+        fi
+    fi
+}
+_ensure_ueberzugpp_installed() {
+    if ! command -v ueberzugpp &> /dev/null; then
+        echo "'ueberzugpp' is not installed."
+        # Check if yay is available for AUR installations
+        if command -v yay &> /dev/null; then
+            echo "'yay' is available. Attempting to install 'ueberzugpp' from the AUR..."
+            if yay -S --noconfirm ueberzugpp; then
+                echo "'ueberzugpp' installed successfully."
+            else
+                echo "Failed to install 'ueberzugpp'. Please check your AUR helper and internet connection."
+            fi
+        else
+            echo "Distro Detected does not presently support full quality image previewer."
+            if command -v figlet &> /dev/null; then
+                figlet "Skipping ueberzugpp"
+            else
+                echo "Skipping ueberzugpp installation."
+            fi
+        fi
+    else
+        echo "'ueberzugpp' is already installed."
+    fi
+}
+
+_install_tmux_with_sixel() {
+
+    echo "Preparing to install tmux with SIXEL support..."
+
+    # Define the directory for the cloned repo
+    local tmux_repo_dir="$HOME/tmux-build"
+
+    if [[ "$DISTRO_FLAG" == "arch_based" ]]; then
+    # Arch-specific commands
+    ensure_exists base-devel
+    ensure_exists libevent 
+    ensure_exists ncurses
+
+    elif [[ "$DISTRO_FLAG" == "debian_based" ]]; then
+    # Debian/Ubuntu-specific commands
+    ensure_exists build-essential
+    ensure_exists libevent-dev
+    ensure_exists libncurses-dev
+    ensure_exists automake 
+    ensure_exists pkg-config
+    ensure_exists bison
+    fi
+
+    # Clone the nnn repository
+    echo "Cloning tmux repository..."
+    git clone https://github.com/tmux/tmux.git "$tmux_repo_dir" || {
+        echo "Failed to clone nnn repository."
+        return 1
+    }
+
+    # Change to the repository directory
+    cd "$tmux_repo_dir" || return 1
+
+    # Compile tmux with SIXEL support
+    echo "Compiling tmux with SIXEL support..."
+    sh autogen.sh
+    ./configure --enable-sixel
+    make
+
+    # Install tmux
+    echo "Installing tmux..."
+    sudo make install || {
+        echo "Installation of tmux failed."
+        return 1
+    }
+    cd $HOME 
+    # Clean up the cloned repository
+    echo "Cleaning up..."
+    rm -rf "$tmux_repo_dir"
+
+    echo "tmux successfully installed with sixel support $target_bin_dir."
+    command -v figlet &> /dev/null && figlet "tmux Installed" || echo "tmux Installed"
+}
+_install_tpm() {
+    local TMUX_PLUGIN_DIR="$HOME/.tmux/plugins/tpm"
+
+    # Check if TPM is already installed
+    if [ -d "$TMUX_PLUGIN_DIR" ]; then
+        echo "TPM is already installed. Refresh your Tmux session and press Prefix (default: ctlr + b) + I to install plugins."
+        return 0  # Exit the function successfully
+    fi
+
+    echo "Installing Tmux Plugin Manager (TPM)..."
+    # Attempt to clone the TPM repository
+    if git clone https://github.com/tmux-plugins/tpm "$TMUX_PLUGIN_DIR" &> /dev/null; then
+        # If git clone succeeds
+        if command -v figlet &> /dev/null; then
+            figlet "TPM Installed"
+        else
+            echo "TPM Installed"
+        fi
+    else
+        # If git clone fails
+        echo "Failed to install TPM. Please check your internet connection or git configuration."
+        return 1  # Exit the function indicating failure
+    fi
+}
+
+_install_nnn_with_emojis() {
+    # Save the current directory
+    local original_dir=$(pwd)
+
+    # Define the directory for the cloned repo and the target directory for the binary
+    local nnn_repo_dir="$HOME/nnn"
+    local target_bin_dir="$HOME/.local/bin"
+
+    # Ensure target_bin_dir exists
+    mkdir -p "$target_bin_dir"
+
+    if [[ "$DISTRO_FLAG" == "arch_based" ]]; then
+    # Arch-specific commands
+    echo "if running into issues, look into these three packages: pkg-config libncursesw5-dev libreadline-dev"
+    echo "they're listed as dependancies, but i did not require installing them to compile thusly"
+
+    elif [[ "$DISTRO_FLAG" == "debian_based" ]]; then
+    # Debian/Ubuntu-specific commands
+    ensure_exists pkg-config
+    ensure_exists libncursesw5-dev
+    ensure_exists libreadline-dev
+
+    fi
+
+    # Clone the nnn repository
+    echo "Cloning nnn repository..."
+    git clone https://github.com/jarun/nnn.git "$nnn_repo_dir" || {
+        echo "Failed to clone nnn repository."
+        return 1
+    }
+
+    # Change to the repository directory
+    cd "$nnn_repo_dir" || return 1
+
+    # Compile nnn with Unicode Emoji support
+    echo "Compiling nnn with Unicode Emoji support..."
+    make O_EMOJI=1
+
+    # Move the compiled nnn binary to the target directory
+    echo "Moving nnn to $target_bin_dir"
+    mv nnn "$target_bin_dir"
+
+    # Install plugins
+    echo "Installing nnn plugins..."
+    sh -c "$(curl -Ls https://raw.githubusercontent.com/jarun/nnn/master/plugins/getplugs)"
+    curl 'https://raw.githubusercontent.com/jarun/nnn/master/plugins/preview-tui' -o "$HOME/.config/nnn/plugins/preview-tui"
+    # Clean up the cloned repository
+    echo "Cleaning up..."
+    rm -rf "$nnn_repo_dir"
+
+    # Return to the original directory
+    cd "$original_dir" || return 1
+
+    echo "nnn with Unicode Emoji support and plugins installed successfully in $target_bin_dir."
+    figlet "NNN Installed"
+}
+function _listcommands() {
+    # Use Zsh's print with ANSI colors for consistency
+    local RED="%F{red}"
+    local YELLOW="%F{yellow}"
+    local BLUE="%F{blue}"
+    local NOCOLOR="%f"
+
+print -P "${RED}Aliases:${NOCOLOR}"
+for alias in ${(ok)aliases}; do
+    alias_name=$alias
+    alias_command=${aliases[$alias]}
+    print -P "${YELLOW}${alias_name}${NOCOLOR}='${BLUE}${alias_command}${NOCOLOR}'"
+done
+
+print -P "\n${RED}Functions:${NOCOLOR}"
+# Correctly sort function names alphabetically, excluding those starting with an underscore
+func_names=(${(ok)functions})
+for func in "${func_names[@]}"; do
+    [[ $func == _* ]] && continue  # Skip functions starting with an underscore
+    print -P "${YELLOW}$func${NOCOLOR}"
+done
+
+}
+edit-file(){
+
+    if [ -w "$1" ]; then
+        # If the file is writable, open normally
+        "$editor" "$1"
+    else
+        # If the file is not writable, attempt to open with sudo
+        sudo "$editor" "$1"
+    fi
+}
+
+open_file() {
+    local file="$1"
+    local editor="${EDITOR:-nano}"  # Default to nano if $EDITOR is not set
+    local mime_type=$(file --brief --mime-type "$file")
+    local extension="${file##*.}"
+    
+    # Define an array of known code file extensions
+    local code_extensions=("py" "js" "html" "css" "json" "conf" "sh" "md" "xml" "yml" "yaml" "ini" "cpp" "c" "h" "java" "go" "php" "rb" "sql")
+
+    # Check if the file is a text file or has a known code file extension
+    if [[ $mime_type == text/* ]] || [[ " ${code_extensions[*]} " == *" $extension "* ]]; then
+        # It's a text or code file; decide whether to use sudo based on write permission
+        if [ -w "$file" ]; then
+            tmux new-window -n "edit" "$editor $file"
+        else
+            tmux new-window -n "edit" "sudo $editor $file"
+        fi
+    else
+        # Not a text or recognized code file, open with xdg-open or another suitable application
+        xdg-open "$file" >/dev/null 2>&1 &
+    fi
+}
+
+
+#nnn file manager
+nn(){
+# Block nesting of nnn in subshells
+    [ "${NNNLVL:-0}" -eq 0 ] || {
+        echo "nnn is already running"
+        return
+    }
+    if [ -z "$EDITOR" ]; then
+        EDITOR=nano
+    fi
+    #trap cleanup_panes EXIT
+    #cleanup_panes
+
+    NNN_FIFO="$(mktemp --suffix=-nnn -u)"
+    export NNN_FIFO
+    export NNN_TMPFILE="${XDG_CONFIG_HOME:-$HOME/.config}/nnn/.lastd"
+    (umask 077; mkfifo "$NNN_FIFO")
+    command nnn -dHEPp "$@"
+    [ ! -f "$NNN_TMPFILE" ] || {
+        . "$NNN_TMPFILE"
+        rm -f -- "$NNN_TMPFILE" > /dev/null
+    }
+}
+n(){
+# Block nesting of nnn in subshells
+    [ "${NNNLVL:-0}" -eq 0 ] || {
+        echo "nnn is already running"
+        return
+    }
+    if [ -z "$EDITOR" ]; then
+        EDITOR=nano
+    fi
+    #trap cleanup_panes EXIT
+    #cleanup_panes
+
+    NNN_FIFO="$(mktemp --suffix=-nnn -u)"
+    export NNN_FIFO
+    export NNN_TMPFILE="${XDG_CONFIG_HOME:-$HOME/.config}/nnn/.lastd"
+    (umask 077; mkfifo "$NNN_FIFO")
+    command nnn -E "$@"
+    [ ! -f "$NNN_TMPFILE" ] || {
+        . "$NNN_TMPFILE"
+        rm -f -- "$NNN_TMPFILE" > /dev/null
+    }
+}
+# Tmux pane management setup
+panes_cleanup() {
+    if [ -n "$TMUX" ]; then
+        while [ $(tmux list-panes | wc -l) -gt 1 ]; do
+            tmux kill-pane -t -1
+        done
+    fi
+}
+# Searches for text in all files in the current folder
+function findtext() {
+	# If The Silver Searcher is installed, use that
+	# Link: https://github.com/ggreer/the_silver_searcher
+	# Hint: You can use --ignore "dir/or/file"
+	if [[ -x "$(command -v ag)" ]]; then
+		ag --color --ignore-case --hidden --literal "${@}" 2> /dev/null
+
+	# If ripgrep is installed, use that
+	# Link: https://github.com/BurntSushi/ripgrep
+	elif [[ -x "$(command -v rg)" ]]; then
+		rg --pretty "${@}" | more
+
+	else # Use grep
+		# Link: https://www.howtogeek.com/496056/how-to-use-the-grep-command-on-linux/
+		# Hint: You can use --exclude='/dir/or/file'
+		# -i case-insensitive
+		# -I ignore binary files
+		# -H causes filename to be printed
+		# -r recursive search
+		# -n causes line number to be printed
+		# optional: -F treat search term as a literal, not a regular expression
+		# optional: -l only print filenames and not the matching lines ex. grep -irl "$@" *
+		grep -iIHrn --color=always "${@}" . | $PAGER -r
+	fi
+}
+
+# Extracts any archive(s)
+function extract() {
+	for archive; do
+		if [ -f "$archive" ] ; then
+			case "$archive" in
+				*.tar.bz2)   tar xvjf "$archive"   ;;
+				*.tar.gz)    tar xvzf "$archive"   ;;
+				*.bz2)       bunzip2 "$archive"    ;;
+				*.rar)       rar x "$archive"      ;;
+				*.gz)        gunzip "$archive"     ;;
+				*.tar)       tar xvf "$archive"    ;;
+				*.tbz2)      tar xvjf "$archive"   ;;
+				*.tgz)       tar xvzf "$archive"   ;;
+				*.zip)       unzip "$archive"      ;;
+				*.Z)         uncompress "$archive" ;;
+				*.7z)        7z x "$archive"       ;;
+				*)           echo "don't know how to extract '$archive'..." ;;
+			esac
+		else
+			echo "'$archive' is not a valid file!"
+		fi
+	done
+}
+
+#the almost universal_installer function
+procure() {
+    local program_name=$1
+
+    # Ask for user confirmation before proceeding
+    echo -n "Do you want to install $program_name? [Y/n] "
+    read -r response
+    if [[ "$response" =~ ^([nN][oO]|[nN])$ ]]; then
+        echo "Installation aborted by user."
+        return 1
+    fi
+
+    echo "Attempting to install $program_name..."
+
+    # Debian/Ubuntu (apt)
+    if command -v apt &> /dev/null; then
+        echo "Detected apt package manager."
+        sudo apt update && sudo apt install -y "$program_name"
+
+    # Arch Linux (pacman) and fallback to AUR (yay) if pacman fails
+    elif command -v pacman &> /dev/null; then
+        echo "Trying with pacman first..."
+        if ! sudo pacman -Sy --noconfirm "$program_name"; then
+            echo "$program_name not found in official repositories. Trying AUR with yay..."
+            if command -v yay &> /dev/null; then
+                yay -S --noconfirm "$program_name"
+            else
+                echo "yay is not installed. Please install yay for AUR access or install $program_name manually."
+                return 1
+            fi
+        fi
+    else
+        echo "No compatible package manager found. Please install $program_name manually."
+        return 1
+    fi
+}
+
+ensure_run() { ! command -v $1 &> /dev/null && procure $1; command -v $1 &> /dev/null && $1; }
+
+ensure_exists() {
+    if ! command -v "$1" &> /dev/null; then
+        echo "'$1' is not installed. Attempting to install..."
+        procure "$1" && {
+            # Ensure figlet is installed before trying to use it
+            if command -v figlet &> /dev/null; then
+                figlet "$1 Installed"
+            else
+                echo "$1 installed successfully."
+            fi
+        }
+    else
+        # Uncomment the following line if you want a message when the tool is already installed
+        # echo "'$1' is already installed."
+        :
+    fi
+}
+
+

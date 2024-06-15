@@ -1,0 +1,148 @@
+#editor
+alias nano='nano --smarthome --multibuffer --const --autoindent'
+alias add='chezmoi add'
+alias edit="$EDITOR"
+
+# Edit this .rc file
+alias editrc='edit ~/.zshrc'
+alias refresh='source ~/.zshrc; if [ -n "$TMUX" ]; then tmux source-file ~/.tmux.conf; fi'
+
+#logs
+alias errorsboot='journalctl -b -p err | $PAGER'
+alias errorsdriver='dmesg | grep -i error | $PAGER'
+
+# distribution specific commands
+case $DISTRO_FLAG in
+    debian_based)
+        alias update='sudo apt update && sudo apt upgrade && zplug update && sudo reboot'
+        ;;
+    arch_based)
+		alias update='sudo pacman -Syu --noconfirm && yay -Syu --aur --noconfirm && zplug update && sudo reboot'
+        alias errorsupdate='grep -i error /var/log/pacman.log | $PAGER'
+        alias logsupdates='journalctl -b | grep pacman | $PAGER'
+        ;;
+    *)
+        echo "Custom aliases not set. DISTRO_FLAG may not be set correctly."
+        ;;
+esac
+
+alias logsbluetooth='journalctl -b | grep bluetooth | $PAGER'
+alias logswifi='journalctl -b | grep wpa_supplicant | $PAGER'
+alias logsnetworkmanager='journalctl -u NetworkManager | $PAGER'
+alias logsusb='journalctl -b | grep usb | $PAGER'
+alias logsboot='journalctl -b | $PAGER'
+alias reboot='sudo reboot'
+
+if command -v eza >/dev/null 2>&1; then
+	alias ls='eza --icons --sort=modified --oneline --hyperlink'
+	alias la='eza --icons --sort=modified --all --reverse --classify=auto --across'
+	alias laa='eza --icons --sort=name --all --classify=auto --long'
+fi
+
+#Navigation
+alias home='cd ~'
+alias cd..='cd ..'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+
+#display
+alias tree='tree -CAhF --dirsfirst'
+alias treed='tree -CAFd'
+
+# Clear the screen with both clear and cls shorthand
+alias {cls,c}='clear'
+if [[ -x "$(command -v btop)" ]]; then
+	alias top='btop'
+elif [[ -x "$(command -v bpytop)" ]]; then
+	alias top='bpytop'
+elif [[ -x "$(command -v bashtop)" ]]; then
+	alias top='bashtop'
+elif [[ -x "$(command -v nmon)" ]]; then
+	alias top='nmon'
+elif [[ -x "$(command -v glances)" ]]; then
+	alias top='glances'
+elif [[ -x "$(command -v ytop)" ]]; then
+	alias top='ytop'
+elif [[ -x "$(command -v gtop)" ]]; then
+	alias top='gtop'
+elif [[ -x "$(command -v htop)" ]]; then
+	alias top='htop'
+fi
+
+# Show a list of available aliases and functions
+alias aliases-set='_listcommands | $PAGER'
+
+if [[ -x "$(command -v batcat)" ]]; then
+	alias bat='batcat --force-colorization'
+elif [[ -x "$(command -v bat)" ]]; then
+	alias bat='bat --force-colorization'
+fi
+
+#networking
+# Stop pinging after sending 5 ECHO_REQUEST packets
+alias ping='ping -c 5'
+# Do not wait for ping interval 1 second, go fast
+alias fastping='ping -c 50 -i.2'
+# Show open ports
+alias ports='netstat -tulanp'
+
+#Hard drives
+alias df='df --human-readable --print-type --block-size=1K --exclude type=squashfs'
+alias ds='df --exclude-type=tmpfs'
+
+#fun stuff
+if [[ -x "$(command -v neofetch)" ]]; then
+    alias clear='clear; neofetch'
+fi
+
+### CPU, MEMORY, AND PROCESSES
+
+# Display amount of free and used memory
+alias free='free -h'
+
+# When reporting a snapshot of the current processes:
+# a = all users
+# u = user-oriented format providing detailed information
+# x = list the processes without a controlling terminal
+# f = display a tree view of parent to child processes
+alias ps='ps auxf'
+
+# Show top ten processes
+alias cpu='ps aux | sort -r -nk +4 | head | $PAGER'
+
+# Show CPU information
+alias cpuinfo='lscpu | $PAGER'
+
+# Show the USB device tree
+if [[ -x "$(command -v lsusb)" ]]; then
+	alias usb='lsusb -t'
+fi
+
+# Show the PCI device tree
+if [[ -x "$(command -v lspci)" ]]; then
+	alias pci='lspci -tv'
+fi
+
+# Aliases for systemd
+if [[ -x "$(command -v systemctl)" ]]; then
+	# Get a list of all services
+	alias services='systemctl list-units --type=service --state=running,failed'
+	alias servicesall='systemctl list-units --type=service'
+
+	# Find what systemd services have failed
+	alias servicesfailed='systemctl --failed'
+
+	# Get the status of a services
+	alias service.status='sudo systemctl status'
+
+	# Start or stop services
+	alias service.start='sudo systemctl start'
+	alias service.stop='sudo systemctl stop'
+	alias service.kill='sudo systemctl kill'
+	alias service.restart='sudo systemctl restart' # Stop and start
+	alias service.reload='sudo systemctl reload'   # Reload configuration
+	alias service.enable='sudo systemctl enable'
+	alias service.disable='sudo systemctl disable'
+fi
