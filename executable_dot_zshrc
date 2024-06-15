@@ -19,7 +19,7 @@ else
     echo "/etc/os-release not found. Unable to determine distribution."
 fi
 
-export EDITOR=nano
+export EDITOR=kate
 _TMUX_LOAD=false
 
 if [ -f ~/.functions ]; then
@@ -189,8 +189,8 @@ fi
 export HISTSIZE=10000  # Optional, for in-session buffer
 export SAVEHIST=10000  # Optional, for in-session buffer
 
-if [ -f ~/scripts/utils/nnn_opener.sh ]; then
-export NNN_OPENER=~/scripts/utils/nnn_opener.sh
+if [ -f ~/bin/nnn_opener.sh ]; then
+export NNN_OPENER=~/bin/nnn_opener.sh
 fi
 #/home/anon/.config/nnn/plugins/nuke
 export NNN_PAGER="$PAGER"
