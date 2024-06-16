@@ -1,7 +1,7 @@
 #############################################
 #GLOBALS
 #############################################
-
+export STARTUP_TIMER="true"
 export EDITOR=kate
 
 if [ -f ~/.functions ]; then
@@ -55,7 +55,9 @@ fi
 #############################################
 #EXPORTS
 #############################################
-
+if [ "$STARTUP_TIMER" = "true" ]; then
+    START_TIME=$(date +%s%N)
+fi
 export HISTSIZE=10000  # Optional, for in-session buffer
 export SAVEHIST=10000  # Optional, for in-session buffer
 
@@ -236,3 +238,16 @@ fi
 
 fastfetch
 
+if [ "$STARTUP_TIMER" = "True" ]; then
+    # End measuring time
+    END_TIME=$(date +%s%N)
+    STARTUP_TIME_NS=$((END_TIME - START_TIME))
+    STARTUP_TIME_S=$((STARTUP_TIME_NS / 1000000000))
+    STARTUP_TIME_MS=$(( (STARTUP_TIME_NS / 1000000) % 1000 ))
+    # Display startup time
+    if [ $STARTUP_TIME_S -eq 0 ]; then
+        echo "Shell startup time: ${STARTUP_TIME_MS} milliseconds"
+    else
+        echo "Shell startup time: ${STARTUP_TIME_S} seconds and ${STARTUP_TIME_MS} milliseconds"
+    fi
+fi
