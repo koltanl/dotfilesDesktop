@@ -55,7 +55,7 @@ fi
 #############################################
 #EXPORTS
 #############################################
-if [ "$STARTUP_TIMER" = "true" ]; then
+if [[ "$STARTUP_TIMER" == "true" ]]; then
     START_TIME=$(date +%s%N)
 fi
 export HISTSIZE=10000  # Optional, for in-session buffer
@@ -238,7 +238,7 @@ fi
 
 fastfetch
 
-if [ "$STARTUP_TIMER" = "True" ]; then
+if [[ "$STARTUP_TIMER" == "true" ]]; then
     # End measuring time
     END_TIME=$(date +%s%N)
     STARTUP_TIME_NS=$((END_TIME - START_TIME))
