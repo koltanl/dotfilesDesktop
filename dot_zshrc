@@ -1,26 +1,8 @@
 #############################################
 #GLOBALS
 #############################################
-if [[ -f "/etc/os-release" ]]; then
-    source "/etc/os-release"
-    case $ID in
-        ubuntu|debian)
-            DISTRO_FLAG="debian_based"
-            ;;
-        arch|manjaro)
-            DISTRO_FLAG="arch_based"
-            ;;
-        *)
-            echo "Distribution not recognized. Custom aliases not set."
-            ;;
-    esac
-    export DISTRO_FLAG
-else
-    echo "/etc/os-release not found. Unable to determine distribution."
-fi
 
 export EDITOR=kate
-_TMUX_LOAD=false
 
 if [ -f ~/.functions ]; then
     source ~/.functions
@@ -31,11 +13,12 @@ fi
 if [ -f ~/.profile ]; then
     source ~/.profile
 fi
-
-_KERNEL_NAME="$(expr substr $(uname -s) 1 5)"
+if [ -f ~/.inputrc ]; then
+    source ~/.inputrc
+fi
+export LOCAL_IP=$(ip route get 1 | awk '{print $7}')
 export PATH="$HOME/bin:$HOME/.local/bin:/sbin:/usr/sbin:/usr/local/sbin:$PATH"
 export ZPLUG_HOME="$HOME/.zplug"
-first_run_marker="${ZPLUG_HOME}/.installed"
 # Check for 'moar' first; if not found, check for 'less'; if neither, default to 'more'
 if command -v moar &> /dev/null; then
     alias moar="moar -colors auto -wrap -mousemode auto"
@@ -48,138 +31,25 @@ elif command -v more &> /dev/null; then
     export PAGER=more
 fi
 
-if [ "$_TMUX_LOAD" = true ] && command -v tmux >/dev/null 2>&1; then
-    # Check if we are in a tmux session already
-    if [ -z "$TMUX" ]; then
-        # Start a new tmux session or attach to an existing one named "default"
-        tmux attach-session -t default || tmux new-session -s default
-    fi
-else
-   : #echo "tmux is not installed. Please install tmux to use this feature."
-fi
-
-#############################################
-#Dependancies
-#############################################
-
-ensure_exists figlet
-ensure_exists git
-ensure_exists curl
-ensure_exists cmake
-ensure_exists make
-
-# Distro specific checks
-if [[ "$DISTRO_FLAG" == "arch_based" ]]; then
-    ensure_exists yay
-    ensure_exists wezterm
-    # Check if 'ag' command exists.
-    if ! command -v ag &> /dev/null; then
-        ensure_exists the_silver_searcher
-    fi
-    # Arch-specific commands
-elif [[ "$DISTRO_FLAG" == "debian_based" ]]; then
-    ensure_exists debconf
-    # Check if 'ag' command exists
-    if ! command -v ag &> /dev/null; then
-        ensure_exists silversearcher-ag
-    fi
-
-    # Check if the current display server is Wayland
-   if env | grep -q '^WAYLAND_DISPLAY='; then
-       ensure_exists wezterm
-       sudo update-alternatives --config x-terminal-emulator
-   fi
-    # Debian/Ubuntu-specific commands
-fi
-# Check if tmux is installed
-if ! command -v tmux &> /dev/null; then
-    _install_tmux_with_sixel
-fi
-# Independently check if TPM is installed by checking the directory
-if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
-    echo "TPM is not installed."
-    _install_tpm
-fi
-# Check if nnn is installed
-if ! command -v nnn &> /dev/null; then
-    _install_nnn_with_emojis
-fi
-
-# Check if zplug is installed
-if [[ ! -d "${HOME}/.zplug" ]]; then
-    echo "zplug not found. Installing zplug..."
-    git clone https://github.com/zplug/zplug "${ZPLUG_HOME}"
-    #curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
-fi
-# Check if Atuin is installed, if not, run its install script
-if ! command -v atuin &> /dev/null; then
-    echo -n "Atuin is not installed. Do you want to install it now? [Y/n] "
-    read -r response
-    if [[ ! "$response" =~ ^[nN](o)* ]]; then
-        echo "Installing Atuin..."
-        /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)"
-        atuin import bash
-    else
-        echo "Skipping Atuin installation."
-    fi
-fi
-if ! command -v zoxide &> /dev/null; then
-    echo -n "Zoxide is not installed. Do you want to install it now? [Y/n] "
-    read -r response
-    if [[ ! "$response" =~ ^[nN](o)* ]]; then
-        echo "Installing Zoxide..."
-        curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
-    else
-        echo "Skipping Zoxide installation."
-    fi
-fi
-if ! command -v img2sixel &> /dev/null; then
-    ensure_exists libsixel
-fi
-if ! command -v sensors &> /dev/null; then
-    ensure_exists lm-sensors
-fi
-ensure_exists tree
-ensure_exists bat
-ensure_exists fzf
-ensure_exists ffmpegthumbnailer
-ensure_exists xclip
-ensure_exists thefuck
-_ensure_eza_installed
-_ensure_moar_installed
-
 #############################################
 # Plugins
 #############################################
+# Source zplug
 
-# Theme
-#zplug "denysdovhan/spaceship-prompt", use:spaceship.zsh-theme, from:github, as:theme
-if [[ -d "${ZPLUG_HOME}" && -f "${first_run_marker}" ]]; then
+if [[ -d "${ZPLUG_HOME}" ]]; then
+    source $ZPLUG_HOME/init.zsh
 
-        source $ZPLUG_HOME/init.zsh
+    # Define plugins
+    zplug "zsh-users/zsh-autosuggestions"
+    zplug "zsh-users/zsh-syntax-highlighting", defer:2
+    zplug "zsh-users/zsh-completions", defer:3
+    zplug "junegunn/fzf", from:github, as:plugin, use:"shell/*.zsh", defer:2
 
-        zplug "zsh-users/zsh-autosuggestions"
-        zplug "zsh-users/zsh-syntax-highlighting", defer:2
-        zplug "zsh-users/zsh-completions", defer:3
-        zplug "junegunn/fzf", from:github, as:plugin, use:"shell/*.zsh", defer:2
+    # Load plugins
+    zplug load
 
-        # Install plugins if they're not already
-        if ! zplug check --verbose; then
-            printf "Install Zplug plugins? [Y/n]: "
-            read -r response
-            response=$(echo "$response" | tr '[:upper:]' '[:lower:]')  # Convert to lowercase using tr
-            if [[ ! "$response" =~ ^(n|no)$ ]]; then
-                echo "Installing Zplug plugins..."
-                zplug install
-            else
-                echo "Skipping plugin installation."
-            fi
-        fi
-
-        # Then load them
-        zplug load #--verbose
-    else
-    echo "Initial zplug setup incomplete. Please complete the setup and restart your shell."
+else
+    echo "zplug is not installed. Please run the install script."
 fi
 
 #############################################
@@ -353,37 +223,16 @@ zstyle '*' single-ignored show
 if [[ -x "$(command -v fuck)" ]]; then
  eval $(thefuck --alias)
 fi
-# Initialize Atuin if available
-[[ -x "$(command -v atuin)" ]] && eval "$(atuin init zsh)"
-
-# Initialize zoxide if available
 if [[ -x "$(command -v zoxide)" ]]; then
     eval "$(zoxide init zsh)"
     alias cd='z'
 fi
-if [ -f ~/.inputrc ]; then
-    source ~/.inputrc
-fi
+[[ -x "$(command -v atuin)" ]] && eval "$(atuin init zsh)"
+[[ -x "$(command -v oh-my-posh)" ]] && eval "$(oh-my-posh init zsh --config ~/.config/omp.json)"
+
 #############################################
 #RAN EVERY REFRESH
 #############################################
 
-ensure_run neofetch
+fastfetch
 
-#############################################
-#first run completion notification
-#############################################
-if [[ ! -f "${first_run_marker}" ]]; then
-    touch "${first_run_marker}"
-    figlet "Setup Complete"
-    if [[ "$DISTRO_FLAG" == "arch_based" ]]; then
-        echo "Please restart your shell for all changes to take effect. Use the 'refresh' command; Be sure to press Prefix (default: Ctrl + b) + I to install remaining plugins (Case sensitive)."
-        echo "Please configure the default terminal emulator to use WezTerm through your desktop environment."
-
-        # Arch-specific commands
-        elif [[ "$DISTRO_FLAG" == "debian_based" ]]; then
-            echo "Please restart your shell for all changes to take effect. Use the 'refresh' command; Be sure to press Prefix (default: Ctrl + b) + I to install remaining plugins (Case sensitive)."
-
-        # Debian/Ubuntu-specific commands
-        fi
-fi

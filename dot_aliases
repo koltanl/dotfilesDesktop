@@ -3,37 +3,43 @@ alias nano='nano --smarthome --multibuffer --const --autoindent'
 alias add='chezmoi add'
 alias edit="$EDITOR"
 
+
+alias fastfetch='fastfetch -c neofetch.jsonc'
+alias neofetch='fastfetch'
+alias fetch='fastfetch'
+
 # Edit this .rc file
 alias editrc='edit ~/.zshrc'
-alias refresh='source ~/.zshrc; if [ -n "$TMUX" ]; then tmux source-file ~/.tmux.conf; fi'
+alias refresh='source ~/.zshrc'
+alias rr='refresh'
+
+#msc
+alias clear='clear; fastfetch'
+alias cls='clear'
+alias c='clear'
+alias reboot='sudo reboot'
+alias remove='purge'
+alias uninstall='purge'
+alias calc='bc'
+alias calculator='bc'
+
+
+alias update='sudo pacman -Syu --noconfirm && update_oh_my_posh && yay -Syu --aur --noconfirm && zplug update && sudo reboot'
+
 
 #logs
 alias errors.boot='journalctl -b -p err | $PAGER'
 alias errors.driver='dmesg | grep -i error | $PAGER'
-
-# distribution specific commands
-case $DISTRO_FLAG in
-    debian_based)
-        alias update='sudo apt update && sudo apt upgrade && zplug update && sudo reboot'
-        ;;
-    arch_based)
-		alias update='sudo pacman -Syu --noconfirm && yay -Syu --aur --noconfirm && zplug update && sudo reboot'
-        alias errorsupdate='grep -i error /var/log/pacman.log | $PAGER'
-        alias logsupdates='journalctl -b | grep pacman | $PAGER'
-        ;;
-    *)
-        echo "Custom aliases not set. DISTRO_FLAG may not be set correctly."
-        ;;
-esac
-
+alias errors.update='grep -i error /var/log/pacman.log | $PAGER'
+alias logs.updates='journalctl -b | grep pacman | $PAGER'
 alias logs.bluetooth='journalctl -b | grep bluetooth | $PAGER'
 alias logs.wifi='journalctl -b | grep wpa_supplicant | $PAGER'
 alias logs.networkmanager='journalctl -u NetworkManager | $PAGER'
 alias logs.usb='journalctl -b | grep usb | $PAGER'
 alias logs.boot='journalctl -b | $PAGER'
-alias reboot='sudo reboot'
-alias remove='purge'
-alias uninstall='purge'
+
+
+
 
 if command -v eza >/dev/null 2>&1; then
 	alias ls='eza --icons --sort=modified --oneline --hyperlink'
@@ -54,7 +60,6 @@ alias tree='tree -CAhF --dirsfirst'
 alias treed='tree -CAFd'
 
 # Clear the screen with both clear and cls shorthand
-alias {cls,c}='clear'
 if [[ -x "$(command -v btop)" ]]; then
 	alias top='btop'
 elif [[ -x "$(command -v bpytop)" ]]; then
@@ -74,7 +79,7 @@ elif [[ -x "$(command -v htop)" ]]; then
 fi
 
 # Show a list of available aliases and functions
-alias aliases-set='_listcommands | $PAGER'
+alias aliases.set='_listcommands | $PAGER'
 
 if [[ -x "$(command -v batcat)" ]]; then
 	alias bat='batcat --force-colorization'
@@ -94,10 +99,9 @@ alias ports='netstat -tulanp'
 alias df='df --human-readable --print-type --block-size=1K --exclude type=squashfs'
 alias ds='df --exclude-type=tmpfs'
 
-#fun stuff
-if [[ -x "$(command -v neofetch)" ]]; then
-    alias clear='clear; neofetch'
-fi
+
+
+
 
 ### CPU, MEMORY, AND PROCESSES
 
@@ -131,10 +135,10 @@ fi
 if [[ -x "$(command -v systemctl)" ]]; then
 	# Get a list of all services
 	alias services='systemctl list-units --type=service --state=running,failed'
-	alias servicesall='systemctl list-units --type=service'
+	alias services.all='systemctl list-units --type=service'
 
 	# Find what systemd services have failed
-	alias servicesfailed='systemctl --failed'
+	alias services.failed='systemctl --failed'
 
 	# Get the status of a services
 	alias service.status='sudo systemctl status'
