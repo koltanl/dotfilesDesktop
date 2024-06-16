@@ -7,7 +7,7 @@
                 {
                     "type": "executiontime",
                     "style": "powerline",
-                    "powerline_symbol": "",
+                    "trailing_diamond": "",
                     "foreground": "#ffffff",
                     "background": "#8800dd",
                     "template": " <#fefefe></> {{ .FormattedMs }} ",
@@ -25,14 +25,14 @@
                     "style": "powerline",
                     "powerline_symbol": "",
                     "foreground": "#ffffff",
-                    "background": "#007ACC",
+                    "background": "#0f8f48",
                     "type": "time",
                     "trailing_diamond": ""
                 },
                 {
                     "type": "text",
                     "style": "powerline",
-                    "background": "#E06C75",
+                    "background": "#bf2833",
                     "powerline_symbol": "",
                     "foreground": "#ffffff",
                     "template": "{{ .Env.LOCAL_IP }}"
@@ -48,7 +48,7 @@
                     "type": "session",
                     "style": "diamond",
                     "foreground": "#ffffff",
-                    "background": "#ffb300",
+                    "background": "#b47d00",
                     "leading_diamond": "",
                     "trailing_diamond": "",
                     "template": "{{ if .SSHSession }} {{ end }}{{ .UserName }}@{{ .HostName }}"
@@ -58,7 +58,7 @@
                     "style": "powerline",
                     "powerline_symbol": "",
                     "foreground": "#ffffff",
-                    "background": "#61AFEF",
+                    "background": "#3398ea",
                     "template": " {{ .Path }} ",
                     "properties": {
                         "style": "full",
