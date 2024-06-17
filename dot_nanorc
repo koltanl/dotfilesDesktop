@@ -3,44 +3,59 @@ set autoindent
 set mouse
 set tabsize 4
 set softwrap
-#syntax "default"
-include "/usr/share/nano/asm.nanorc"
-include "/usr/share/nano/autoconf.nanorc"
-include "/usr/share/nano/awk.nanorc"
-include "/usr/share/nano/c.nanorc"
-include "/usr/share/nano/changelog.nanorc"
-include "/usr/share/nano/cmake.nanorc"
-include "/usr/share/nano/css.nanorc"
-include "/usr/share/nano/default.nanorc"
-include "/usr/share/nano/elisp.nanorc"
-include "/usr/share/nano/email.nanorc"
-include "/usr/share/nano/go.nanorc"
-include "/usr/share/nano/groff.nanorc"
-include "/usr/share/nano/guile.nanorc"
-include "/usr/share/nano/html.nanorc"
-include "/usr/share/nano/java.nanorc"
-include "/usr/share/nano/javascript.nanorc"
-include "/usr/share/nano/json.nanorc"
-include "/usr/share/nano/lua.nanorc"
-include "/usr/share/nano/makefile.nanorc"
-include "/usr/share/nano/man.nanorc"
-include "/usr/share/nano/markdown.nanorc"
-include "/usr/share/nano/nanohelp.nanorc"
-include "/usr/share/nano/nanorc.nanorc"
-include "/usr/share/nano/nftables.nanorc"
-include "/usr/share/nano/objc.nanorc"
-include "/usr/share/nano/ocaml.nanorc"
-include "/usr/share/nano/patch.nanorc"
-include "/usr/share/nano/perl.nanorc"
-include "/usr/share/nano/php.nanorc"
-include "/usr/share/nano/po.nanorc"
-include "/usr/share/nano/python.nanorc"
-include "/usr/share/nano/ruby.nanorc"
-include "/usr/share/nano/rust.nanorc"
-include "/usr/share/nano/sh.nanorc"
-include "/usr/share/nano/sql.nanorc"
-include "/usr/share/nano/tcl.nanorc"
-include "/usr/share/nano/tex.nanorc"
-include "/usr/share/nano/texinfo.nanorc"
-include "/usr/share/nano/xml.nanorc"
-include "/usr/share/nano/yaml.nanorc"
+
+# Custom syntax highlighting
+syntax "sh" "\.(sh|bash|zsh|ksh|csh|tcsh|fish|pl|py|rb|php|lua|js|ts|r|awk|sed|sql|xml|yaml|yml|json|conf)$"
+# Comments
+icolor grey "#.*"
+
+# Keywords
+color brightyellow "\<(if|then|else|fi|for|while|do|done|case|esac|function|in|select|until|time|coproc|read|echo|printf|let|eval|exec|exit|return|shift|ctrl|meta|alt|cd|alias|bg|fg|jobs|kill|ulimit|umask|wait|type|typeset|trap|source|true|false|export|readonly|test|declare|local|enable|logout|set|unset|hash|bind|caller|command|compgen|complete|compopt|dirs|disown|help|history|pwd|shopt|suspend|test|times|unset|wait|builtin|call|readarray|select|ulimit|umask|wait|watch|bind|type|popd|pushd|dirs|disown|command|hash|mapfile|shopt|let|eval|exec|fc|command|jobs|fg|bg|times|umask|wait|jobs|alias|unalias|bind|break|caller|cd|command|declare|dirs|disown|enable|eval|exec|exit|fc|fg|getopts|hash|help|history|jobs|kill|let|local|logout|popd|pushd|read|readonly|return|set|shift|shopt|source|suspend|test|times|trap|type|typeset|ulimit|umask|unalias|unset|wait)\>"
+
+# Control structures
+color magenta "\<(if|else|elif|fi|for|in|while|until|do|done|case|esac|select)\>"
+
+# Functions and built-ins
+color blue "\<(function|builtin)\>"
+
+# Strings
+color red "\".*\""
+color red "'.*'"
+
+# Variables
+color brightcyan "\$[A-Za-z0-9_]+"
+color brightcyan "\$\{[A-Za-z0-9_]+\}"
+color brightcyan "\$\(\("
+                        color brightcyan "\)\)"
+
+# Numbers
+color green "\b[0-9]+\b"
+
+# Operators
+color brightmagenta "[\+\-\*\/\%\=]"
+color brightmagenta "&&|\|\|"
+
+# Command substitutions
+color yellow "\$\([^)]+\)"
+
+# Here documents
+color brightwhite "<<[ \t]*[A-Za-z0-9_]+"
+
+# File descriptors
+color brightwhite "[0-9]&"
+
+# Booleans
+color brightred "\<(true|false)\>"
+
+# Special characters
+color brightyellow "[{}()\"']"
+color brightyellow "[][!|&;<>?*:]"
+
+# Highlighting escape sequences
+color brightmagenta "\\\."
+
+# Highlighting backticks
+color brightcyan "`.*`"
+
+# Highlighting the beginning of the script
+color brightwhite "^#!/bin/(bash|sh|zsh|ksh|fish|perl|python|ruby|php|lua|node|r|awk|sed|sql|xml|yaml|json)"

@@ -322,3 +322,5 @@ purge() {
     local programs=("$@")
     uninstall_programs "${programs[@]}"
 }
+
+
