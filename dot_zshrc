@@ -56,31 +56,6 @@ else
     echo "zplug is not installed. Please run the install script."
 fi
 
-# Additional configuration for zsh-syntax-highlighting
-ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern cursor)
-# Additional configuration for zsh-syntax-highlighting
-ZSH_HIGHLIGHT_PATTERNS=('rm -rf *' 'fg=red')
-ZSH_HIGHLIGHT_PATTERNS+=('chmod 777 *' 'fg=red,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('chown -R' 'fg=red,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('rm -rf /' 'fg=red,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('$(*)' 'fg=yellow,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('`*`' 'fg=yellow,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('git add *' 'fg=yellow,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('git commit *' 'fg=yellow,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('git push *' 'fg=yellow,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('mv *' 'fg=blue,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('cp *' 'fg=blue,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('touch *' 'fg=blue,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('ssh *' 'fg=magenta,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('scp *' 'fg=magenta,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('curl *' 'fg=magenta,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('wget *' 'fg=magenta,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('yay *' 'fg=magenta,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('pacman *' 'fg=magenta,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('systemctl *' 'fg=cyan,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('journalctl *' 'fg=cyan,bold')
-ZSH_HIGHLIGHT_PATTERNS+=('dmesg *' 'fg=cyan,bold')
-
 #############################################
 #EXPORTS
 #############################################
