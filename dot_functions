@@ -1,7 +1,9 @@
 #!/usr/bin/env zsh
-
+_update_atuin(){
+    bash <(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)
+}
 # Function to update oh-my-posh if there's a version change
-update_oh_my_posh() {
+_update_oh_my_posh() {
     # Define the installation directory
     INSTALL_DIR="$HOME/bin"
     OH_MY_POSH_BIN="$INSTALL_DIR/oh-my-posh"
@@ -322,5 +324,4 @@ purge() {
     local programs=("$@")
     uninstall_programs "${programs[@]}"
 }
-
 

@@ -23,7 +23,7 @@ alias calc='bc'
 alias calculator='bc'
 
 
-alias update='sudo pacman -Syu --noconfirm && update_oh_my_posh && yay -Syu --aur --noconfirm && zplug update && sudo reboot'
+alias update='sudo pacman -Syu --noconfirm && update_oh_my_posh && yay -Syu --aur --noconfirm && zplug update && _update_oh_my_posh && _update_atuin && sudo reboot'
 
 
 #logs
@@ -37,7 +37,10 @@ alias logs.networkmanager='sudo journalctl -u NetworkManager | $PAGER'
 alias logs.usb='sudo journalctl -b | grep usb | $PAGER'
 alias logs.boot='sudo journalctl -b | $PAGER'
 
-
+if [[ -x "$(command -v bat)" ]]; then
+alias bat='bat --paging=never --style=header,grid --theme=Visual Studio Dark+'
+alias cat='bat'
+fi
 
 
 if command -v eza >/dev/null 2>&1; then
@@ -80,11 +83,7 @@ fi
 # Show a list of available aliases and functions
 alias aliases.set='_listcommands | $PAGER'
 
-if [[ -x "$(command -v batcat)" ]]; then
-	alias bat='batcat --force-colorization'
-elif [[ -x "$(command -v bat)" ]]; then
-	alias bat='bat --force-colorization'
-fi
+
 
 #networking
 # Stop pinging after sending 5 ECHO_REQUEST packets
